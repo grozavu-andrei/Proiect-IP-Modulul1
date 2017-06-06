@@ -18,6 +18,8 @@ public class Main {
 
     private static void getFiles(final File folder) throws IOException, SAXException, ParserConfigurationException, SQLException {
         int numar = 100;
+        String workExperiencePath="C:\\Users\\Grozavu\\Desktop\\Topuri\\workExperienceTop.txt";
+        String softSkillsPath="Dictionar.txt";
         for (final File fileEntry : folder.listFiles()) {
             if (fileEntry.isDirectory()) {
                 getFiles(fileEntry);
@@ -27,7 +29,7 @@ public class Main {
                 System.out.println(path);
                 numar++;
                 System.out.println("cv : "+numar);
-                populate(path, numar);
+                populate(path, numar,workExperiencePath,softSkillsPath);
             }
         }
     }
@@ -56,11 +58,11 @@ public class Main {
         return sum;
     }
 
-    public static int softSkillsValue(String skill) throws FileNotFoundException, IOException {
+    public static int softSkillsValue(String skill,String softSkillsPath) throws FileNotFoundException, IOException {
         HashMap<String, Integer> dictionary = new HashMap<>();
         String CurrentLine;
         int sum = 0;
-        try (BufferedReader br = new BufferedReader(new FileReader("Dictionar.txt"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(softSkillsPath))) {
             while ((CurrentLine = br.readLine()) != null) {
                 String[] arr = CurrentLine.split(", ");
                 dictionary.put(arr[0], Integer.parseInt(arr[1]));
@@ -83,10 +85,9 @@ public class Main {
         return values;
     }
 
-    private static void populate(String path, int numar) throws SAXException, ParserConfigurationException, SQLException, IOException {
+    private static void populate(String path, int number, String workExperiencePath,String softSkillsPath) throws SAXException, ParserConfigurationException, SQLException, IOException {
         String name = CV.getName(path);
         String email = CV.getEmail(path);
-        String workExperiencePath="C:\\Users\\Grozavu\\Desktop\\Topuri\\workExperienceTop.txt";
         List<WorkExperience> workExperience = CV.getWorkExperience(path,workExperiencePath);
 
         int studies[] = CV.getStudiesExperience(path);
@@ -98,7 +99,7 @@ public class Main {
         //////////////////////////////////curriculum vitae///////////////////////////////////
         pstmt = con.prepareStatement("insert into curriculumvitae (id,name,email) values (?,?,?)");
 
-        pstmt.setInt(1, numar);
+        pstmt.setInt(1, number);
         pstmt.setString(2, name);
         pstmt.setString(3, email);
         pstmt.executeUpdate();
@@ -108,13 +109,19 @@ public class Main {
         //////////////////////////////////work experience////////////////////////////////////
         for (int i = 0; i < workExperience.size(); i++) {
             pstmt = con.prepareStatement("insert into experience (cv_id,job_title,experience_years,value) values (?,?,?,?)");
-            pstmt.setInt(1, numar);
+            pstmt.setInt(1, number);
             pstmt.setString(2, workExperience.get(i).jobTitle);
             pstmt.setInt(3, workExperience.get(i).experienceYears);
             pstmt.setInt(4, workExperience.get(i).value);
             pstmt.executeUpdate();
             var += workExperience.get(i).experienceYears;
             pstmt.close();
+            
+//            pstmt = con.prepareStatement("update experience set value=? where cv_id=?");
+//            pstmt.setInt(1, workExperience.get(i).value);
+//            pstmt.setInt(2, numar);
+//            pstmt.executeUpdate();
+//            pstmt.close();
         }
 
         pstmt.close();
@@ -142,7 +149,7 @@ public class Main {
             pstmt = con.prepareStatement("insert into technicalskills (cv_id,skill,value) values (?,?,?)");
             if(technicalSkillsValue(skills.get(i),"oop")!=0)
             {
-                pstmt.setInt(1, numar);
+                pstmt.setInt(1, number);
                 pstmt.setString(2, skills.get(i));
                 pstmt.setInt(3, technicalSkillsValue(skills.get(i),"oop"));
                 pstmt.executeUpdate();
@@ -155,11 +162,11 @@ public class Main {
         ////////////////////////// soft skills///////////////////////////////////
         for (int i = 0; i < skills.size(); i++) {
             pstmt = con.prepareStatement("insert into softskills (cv_id,skill,value) values (?,?,?)");
-            if(softSkillsValue(skills.get(i))!=0)
+            if(softSkillsValue(skills.get(i),softSkillsPath)!=0)
             {
-                pstmt.setInt(1, numar);
+                pstmt.setInt(1, number);
                 pstmt.setString(2, skills.get(i));
-                pstmt.setInt(3, softSkillsValue(skills.get(i)));
+                pstmt.setInt(3, softSkillsValue(skills.get(i),softSkillsPath));
                 pstmt.executeUpdate();
             }
             pstmt.close();
@@ -170,7 +177,7 @@ public class Main {
         ///////////////////////////////////studies//////////////////////////////////
         pstmt = con.prepareStatement("insert into studies (cv_id,certificate,study_years,value) values (?,?,?,?)");
 
-        pstmt.setInt(1, numar);
+        pstmt.setInt(1, number);
         pstmt.setInt(2, studies[0]);
         pstmt.setInt(3, studies[1]);
         pstmt.setInt(4, studiesValue(path));
